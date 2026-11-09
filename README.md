@@ -134,7 +134,7 @@ redteam/
   runner.py     parallel experiment runner
   cli.py        command-line interface
 tests/          offline pytest suite
-.github/        CI: lint, tests and a smoke run on Python 3.9–3.12
+.github/        CI: lint, tests and a smoke run on Python 3.10–3.12 (also tested on 3.9)
 ```
 
 ## License
