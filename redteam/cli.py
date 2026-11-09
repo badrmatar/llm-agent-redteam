@@ -15,7 +15,7 @@ import time
 
 from redteam.models import DEFAULT_MODELS
 from redteam.report import build_report
-from redteam.runner import run_experiment
+from redteam.runner import rejudge, run_experiment
 from redteam.target import DEFENCES
 
 
@@ -33,8 +33,17 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", help="output folder (default results/<provider>)")
     ap.add_argument("--resume", action="store_true", help="keep finished episodes and only run missing or failed ones")
+    ap.add_argument("--rejudge", metavar="FOLDER", help="re-score FOLDER/results.jsonl with the current judges, then rebuild the report")
     ap.add_argument("--report-only", metavar="FOLDER", help="rebuild report from FOLDER/results.jsonl")
     args = ap.parse_args()
+
+    if args.rejudge:
+        with open(os.path.join(args.rejudge, "meta.json")) as f:
+            meta = json.load(f)
+        recs = rejudge(os.path.join(args.rejudge, "results.jsonl"), meta["provider"], meta.get("judge_model"), args.workers)
+        print(f"Re-judged {len(recs)} conversations, {sum(r['success'] for r in recs)} successful attacks")
+        print(build_report(os.path.join(args.rejudge, "results.jsonl"), args.rejudge, meta))
+        return
 
     if args.report_only:
         with open(os.path.join(args.report_only, "meta.json")) as f:

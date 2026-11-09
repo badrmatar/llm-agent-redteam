@@ -11,6 +11,7 @@ from .attacker import Attacker
 from .goals import GOALS, judge, rule_check
 from .models import make_model
 from .target import TargetAgent
+from .world import World
 
 
 def run_episode(goal, defence: str, attacker_model, target_model, judge_model, turns: int) -> dict:
@@ -82,3 +83,31 @@ def run_experiment(provider: str, defences, runs: int, turns: int, out_path: str
     if failed and progress:
         print(f"  {failed} episodes failed (e.g. network errors). Re-run the same command with --resume to fill them in.")
     return results
+
+
+def rejudge(results_path: str, provider: str, judge_model_name=None, workers: int = 8) -> list:
+    """Re-score saved conversations with the current judges (no new attack conversations).
+
+    The original file is kept as results.before_rejudge.jsonl.
+    """
+    goals = {g.id: g for g in GOALS}
+    with open(results_path) as f:
+        records = [json.loads(line) for line in f if line.strip()]
+
+    def one(rec):
+        world = World()
+        world.log = rec["tool_log"]
+        replies = [t["target"] for t in rec["transcript"]]
+        jdg = make_model(provider, judge_model_name, seed=0, temperature=0.0)
+        rec["success"], rec["judge_method"] = judge(goals[rec["goal_id"]], world, replies, jdg)
+        return rec
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        records = list(pool.map(one, records))
+    backup = results_path.replace(".jsonl", ".before_rejudge.jsonl")
+    if not os.path.exists(backup):
+        os.replace(results_path, backup)
+    with open(results_path, "w") as f:
+        for rec in records:
+            f.write(json.dumps(rec) + "\n")
+    return records
