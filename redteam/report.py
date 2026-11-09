@@ -43,7 +43,7 @@ def comparisons(results: list, defences) -> list:
         for c in CATEGORIES:
             rows.append((c, cmh_test(results, "none", d, subset=lambda r, c=c: r["category"] == c)))
     adj = holm([r[1]["p"] for r in rows])
-    return [(scope, res, p) for (scope, res), p in zip(rows, adj, strict=True)]
+    return [(scope, res, p) for (scope, res), p in zip(rows, adj)]  # noqa: B905 (Python 3.9 support)
 
 
 def plot(summary: dict, defences, path: str):

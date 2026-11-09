@@ -1,7 +1,7 @@
 # llm-agent-redteam
 
 [![CI](https://github.com/badrmatar/llm-agent-redteam/actions/workflows/ci.yml/badge.svg)](https://github.com/badrmatar/llm-agent-redteam/actions/workflows/ci.yml)
-![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Python](https://img.shields.io/badge/python-3.9%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 
 **Automated red-teaming of tool-using LLM agents, with statistically rigorous defence comparisons.**
@@ -70,6 +70,7 @@ to read its own database.
 ```bash
 git clone https://github.com/badrmatar/llm-agent-redteam && cd llm-agent-redteam
 python -m venv .venv && source .venv/bin/activate
+pip install --upgrade pip               # old pips cannot install pyproject projects
 pip install -e ".[dev,openai]"          # or .[dev,anthropic]
 
 pytest -q                               # 16 offline tests
@@ -133,7 +134,7 @@ redteam/
   runner.py     parallel experiment runner
   cli.py        command-line interface
 tests/          offline pytest suite
-.github/        CI: lint, tests and a smoke run on Python 3.10–3.12
+.github/        CI: lint, tests and a smoke run on Python 3.9–3.12
 ```
 
 ## License
