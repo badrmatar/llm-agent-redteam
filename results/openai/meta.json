@@ -1,0 +1,15 @@
+{
+  "provider": "openai",
+  "runs": 3,
+  "turns": 5,
+  "defences": [
+    "none",
+    "prompt",
+    "guard"
+  ],
+  "attacker_model": "gpt-4o-mini",
+  "target_model": "gpt-4o-mini",
+  "judge_model": "gpt-4o-mini",
+  "seed": 0,
+  "started": "2026-11-09 02:13:31"
+}
