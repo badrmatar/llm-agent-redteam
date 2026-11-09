@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "llm-agent-redteam"
+version = "0.1.0"
+description = "Automated red-teaming of tool-using LLM agents, with statistically rigorous defence comparisons."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Bader Matar" }]
+requires-python = ">=3.10"
+dependencies = ["numpy", "scipy", "matplotlib"]
+
+[project.optional-dependencies]
+openai = ["openai>=1.0"]
+anthropic = ["anthropic>=0.30"]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+redteam = "redteam.cli:main"
+
+[tool.setuptools]
+packages = ["redteam"]
+
+[tool.ruff]
+line-length = 140
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
