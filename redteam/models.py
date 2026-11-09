@@ -46,14 +46,14 @@ class AnthropicModel:
         return "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
 
 
-def _retry(fn, tries: int = 5):
+def _retry(fn, tries: int = 7):
     for i in range(tries):
         try:
             return fn()
         except Exception:  # rate limits, timeouts
             if i == tries - 1:
                 raise
-            time.sleep(2 ** i)
+            time.sleep(min(2 ** i, 30))
 
 
 # --------------------------------------------------------------------------------------

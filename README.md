@@ -91,6 +91,8 @@ Each run writes to `results/<provider>/`:
 - `success_by_category.png`: the chart below.
 
 `redteam --report-only results/openai` rebuilds the report from saved results.
+If some conversations fail (for example a network drop), re-run the same command with `--resume`:
+finished conversations are kept and only the missing ones are run.
 
 ## Results
 
