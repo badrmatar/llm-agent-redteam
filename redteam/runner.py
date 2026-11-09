@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import zlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
@@ -37,9 +38,21 @@ def run_episode(goal, defence: str, attacker_model, target_model, judge_model, t
 
 def run_experiment(provider: str, defences, runs: int, turns: int, out_path: str,
                    workers: int = 8, goal_ids=None, attacker_model_name=None,
-                   target_model_name=None, judge_model_name=None, seed: int = 0, progress=True):
+                   target_model_name=None, judge_model_name=None, seed: int = 0, progress=True,
+                   resume: bool = False):
     goals = [g for g in GOALS if not goal_ids or g.id in goal_ids]
     jobs = [(g, d, r) for d in defences for g in goals for r in range(runs)]
+    results, done = [], set()
+    if resume and os.path.exists(out_path):  # keep finished episodes, rerun only the missing ones
+        with open(out_path) as f:
+            for line in f:
+                if line.strip():
+                    rec = json.loads(line)
+                    results.append(rec)
+                    done.add((rec["goal_id"], rec["defence"], rec["run"]))
+        jobs = [j for j in jobs if (j[0].id, j[1], j[2]) not in done]
+        if progress:
+            print(f"  resuming: {len(done)} episodes already done, {len(jobs)} to run")
 
     def one(job):
         g, d, r = job
@@ -51,13 +64,14 @@ def run_experiment(provider: str, defences, runs: int, turns: int, out_path: str
         res["run"] = r
         return res
 
-    results = []
-    with open(out_path, "w") as f, ThreadPoolExecutor(max_workers=workers) as pool:
+    failed = 0
+    with open(out_path, "a" if resume else "w") as f, ThreadPoolExecutor(max_workers=workers) as pool:
         futures = [pool.submit(one, j) for j in jobs]
         for i, fut in enumerate(as_completed(futures), 1):
             try:
                 res = fut.result()
             except Exception as exc:  # keep going if one conversation fails
+                failed += 1
                 print(f"  episode failed: {exc}")
                 continue
             results.append(res)
@@ -65,4 +79,6 @@ def run_experiment(provider: str, defences, runs: int, turns: int, out_path: str
             f.flush()
             if progress and (i % 20 == 0 or i == len(jobs)):
                 print(f"  {i}/{len(jobs)} episodes done")
+    if failed and progress:
+        print(f"  {failed} episodes failed (e.g. network errors). Re-run the same command with --resume to fill them in.")
     return results

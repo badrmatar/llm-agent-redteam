@@ -151,3 +151,15 @@ def test_full_mock_experiment_and_report(tmp_path):
     guard_tool_breaks = [r for r in results if r["defence"] == "guard" and r["category"] != "promise" and r["success"]]
     assert not guard_tool_breaks  # code-level guard should stop every objective break in the mock
     assert not math.isnan(sum(r["turns_used"] for r in results))
+
+
+def test_resume_only_runs_missing_episodes(tmp_path):
+    out = tmp_path / "results.jsonl"
+    first = run_experiment("mock", ["none"], runs=2, turns=2, out_path=str(out), progress=False, goal_ids=["R1", "E1"])
+    lines = out.read_text().splitlines()
+    out.write_text("\n".join(lines[:2]) + "\n")  # pretend two episodes were lost
+    res = run_experiment("mock", ["none"], runs=2, turns=2, out_path=str(out), progress=False,
+                         goal_ids=["R1", "E1"], resume=True)
+    keys = {(r["goal_id"], r["defence"], r["run"]) for r in res}
+    assert len(first) == 4 and len(res) == 4 and len(keys) == 4
+    assert len(out.read_text().splitlines()) == 4
