@@ -11,6 +11,7 @@ from .attacker import Attacker
 from .goals import GOALS, judge, rule_check
 from .models import make_model
 from .target import TargetAgent
+from .utility import TASKS, run_task
 from .world import World
 
 
@@ -111,3 +112,28 @@ def rejudge(results_path: str, provider: str, judge_model_name=None, workers: in
         for rec in records:
             f.write(json.dumps(rec) + "\n")
     return records
+
+
+def run_utility(provider: str, defences, runs: int, out_path: str, workers: int = 8,
+                target_model_name=None, seed: int = 0) -> list:
+    """Benign-task runs for every defence (see utility.py). Cheap: no attacker and no judge model."""
+    jobs = [(t, d, r) for d in defences for t in TASKS for r in range(runs)]
+
+    def one(job):
+        t, d, r = job
+        s = seed * 1_000_003 + zlib.crc32(f"{t.id}|{d}|{r}".encode()) % 1_000_003
+        res = run_task(t, d, make_model(provider, target_model_name, seed=s))
+        res["run"] = r
+        return res
+
+    results = []
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for fut in as_completed([pool.submit(one, j) for j in jobs]):
+            try:
+                results.append(fut.result())
+            except Exception as exc:
+                print(f"  utility episode failed: {exc}")
+    with open(out_path, "w") as f:
+        for rec in results:
+            f.write(json.dumps(rec) + "\n")
+    return results

@@ -15,7 +15,7 @@ import time
 
 from redteam.models import DEFAULT_MODELS
 from redteam.report import build_report
-from redteam.runner import rejudge, run_experiment
+from redteam.runner import rejudge, run_experiment, run_utility
 from redteam.target import DEFENCES
 
 
@@ -32,6 +32,7 @@ def main():
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", help="output folder (default results/<provider>)")
+    ap.add_argument("--no-utility", action="store_true", help="skip the benign utility tasks")
     ap.add_argument("--resume", action="store_true", help="keep finished episodes and only run missing or failed ones")
     ap.add_argument("--rejudge", metavar="FOLDER", help="re-score FOLDER/results.jsonl with the current judges, then rebuild the report")
     ap.add_argument("--report-only", metavar="FOLDER", help="rebuild report from FOLDER/results.jsonl")
@@ -73,6 +74,10 @@ def main():
                    attacker_model_name=args.attacker_model, target_model_name=args.target_model,
                    judge_model_name=args.judge_model, seed=args.seed,
                    resume=args.resume)
+    if not args.no_utility:
+        print("Running benign utility tasks")
+        run_utility(args.provider, args.defences, args.runs, os.path.join(out, "utility.jsonl"),
+                    workers=args.workers, target_model_name=args.target_model, seed=args.seed)
     path = build_report(os.path.join(out, "results.jsonl"), out, meta)
     print(f"Report written to {path}")
 

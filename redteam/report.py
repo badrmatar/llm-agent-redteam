@@ -10,7 +10,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 from .goals import CATEGORIES, GOALS, STRATEGIES  # noqa: E402
-from .stats import cmh_test, holm, summarise  # noqa: E402
+from .stats import cmh_test, holm, rate_row, summarise  # noqa: E402
 
 DEF_ORDER = ("none", "prompt", "datamark", "sandwich", "guard")
 
@@ -82,6 +82,27 @@ def example(results: list) -> str:
     return "No successful attack against the undefended agent in this run."
 
 
+def utility_section(out_dir: str, defences) -> str:
+    """Benign utility and utility under attack per defence, if utility.jsonl exists."""
+    path = os.path.join(out_dir, "utility.jsonl")
+    if not os.path.exists(path):
+        return ""
+    recs = load(path)
+    rows = {}
+    for kind in ("benign", "under_attack"):
+        for d in defences:
+            sub = [r for r in recs if r["kind"] == kind and r["defence"] == d]
+            if sub:
+                rows[(d, kind)] = rate_row(sum(r["success"] for r in sub), len(sub))
+    labels = {"benign": "benign utility", "under_attack": "utility under attack"}
+    lines = ["| metric | " + " | ".join(defences) + " |", "|---|" + "---|" * len(defences)]
+    for kind, label in labels.items():
+        lines.append(f"| {label} | " + " | ".join(fmt(rows.get((d, kind))) for d in defences) + " |")
+    return ("## Utility\nShare of honest customer tasks the agent completes without breaking a rule "
+            "(metrics from AgentDojo, Debenedetti et al. 2024). A defence is only useful if this stays high.\n\n"
+            + "\n".join(lines) + "\n")
+
+
 def build_report(results_path: str, out_dir: str, meta: dict) -> str:
     results = load(results_path)
     defences = [d for d in DEF_ORDER if any(r["defence"] == d for r in results)]
@@ -115,6 +136,7 @@ Each cell is the attack success rate with a 95% Clopper-Pearson interval and the
 ## Overall
 {table(by_all, ['all'], defences, 'scope')}
 
+{utility_section(out_dir, defences)}
 ## By category
 {table(by_cat, [c for c in CATEGORIES if any((d, c) in by_cat for d in defences)], defences, 'category')}
 
