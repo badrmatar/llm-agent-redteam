@@ -280,3 +280,20 @@ def test_exact_stratified_test_matches_fisher_and_combines_strata():
     assert exact_stratified_test([((0, 3), (0, 3))]) == pytest.approx(1.0)  # uninformative stratum
     table = [[7, 3], [2, 8]]
     assert exact_stratified_test([((7, 3), (2, 8))]) == pytest.approx(fisher_exact(table)[1], abs=1e-9)
+
+
+def test_retry_gives_up_immediately_on_auth_errors():
+    from redteam.models import _retry
+
+    class AuthenticationError(Exception):
+        pass
+
+    calls = []
+
+    def bad_key():
+        calls.append(1)
+        raise AuthenticationError("invalid key")
+
+    with pytest.raises(AuthenticationError):
+        _retry(bad_key)
+    assert len(calls) == 1

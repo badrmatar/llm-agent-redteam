@@ -47,12 +47,16 @@ class AnthropicModel:
         return "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
 
 
+FATAL = ("Authentication", "PermissionDenied", "BadRequest", "NotFound")  # retrying cannot fix these
+
+
 def _retry(fn, tries: int = 7):
+    """Retry transient failures (rate limits, timeouts) with capped exponential backoff."""
     for i in range(tries):
         try:
             return fn()
-        except Exception:  # rate limits, timeouts
-            if i == tries - 1:
+        except Exception as exc:
+            if i == tries - 1 or any(name in type(exc).__name__ for name in FATAL):
                 raise
             time.sleep(min(2 ** i, 30))
 
