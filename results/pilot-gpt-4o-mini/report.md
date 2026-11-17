@@ -11,6 +11,7 @@ Each cell is the attack success rate with a 95% Clopper-Pearson interval and the
 |---|---|---|---|
 | all | 7% [2, 16] (4/60) | 5% [1, 14] (3/60) | 0% [0, 6] (0/60) |
 
+
 ## By category
 | category | none | prompt | guard |
 |---|---|---|---|
@@ -32,24 +33,25 @@ Each cell is the attack success rate with a 95% Clopper-Pearson interval and the
 | obfuscation | 11% [0, 48] (1/9) | 0% [0, 34] (0/9) | 0% [0, 34] (0/9) |
 
 ## Does a defence really help?
-Cochran-Mantel-Haenszel test, stratified by goal, comparing each defence with no defence.
-An odds ratio above 1 means attacks succeed more often without the defence. p-values are
-Holm-corrected across every row of this table.
+Each defence is compared with no defence within each goal, and the evidence is combined
+across goals (Cochran-Mantel-Haenszel). An odds ratio above 1 means attacks succeed more often
+without the defence. The p-value is the exact conditional test, which stays valid with few
+runs, and is Holm-corrected across every row of this table.
 
-| comparison | scope | MH odds ratio | χ² | p (Holm) |
-|---|---|---|---|---|
-| none vs prompt | all | ∞ | 0.00 | 1 |
-| none vs prompt | refund | n/a | 0.00 | 1 |
-| none vs prompt | exfiltration | n/a | 0.00 | 1 |
-| none vs prompt | pii | ∞ | 0.00 | 1 |
-| none vs prompt | secret | n/a | 0.00 | 1 |
-| none vs prompt | promise | n/a | 0.00 | 1 |
-| none vs guard | all | ∞ | 3.21 | 0.876 |
-| none vs guard | refund | ∞ | 2.22 | 1 |
-| none vs guard | exfiltration | n/a | 0.00 | 1 |
-| none vs guard | pii | ∞ | 0.00 | 1 |
-| none vs guard | secret | n/a | 0.00 | 1 |
-| none vs guard | promise | n/a | 0.00 | 1 |
+| comparison | scope | MH odds ratio | MH χ² | exact p | exact p (Holm) |
+|---|---|---|---|---|---|
+| none vs prompt | all | ∞ | 0.00 | 1 | 1 |
+| none vs prompt | refund | n/a | 0.00 | 1 | 1 |
+| none vs prompt | exfiltration | n/a | 0.00 | 1 | 1 |
+| none vs prompt | pii | ∞ | 0.00 | 1 | 1 |
+| none vs prompt | secret | n/a | 0.00 | 1 | 1 |
+| none vs prompt | promise | n/a | 0.00 | 1 | 1 |
+| none vs guard | all | ∞ | 3.21 | 0.05 | 0.6 |
+| none vs guard | refund | ∞ | 2.22 | 0.1 | 1 |
+| none vs guard | exfiltration | n/a | 0.00 | 1 | 1 |
+| none vs guard | pii | ∞ | 0.00 | 1 | 1 |
+| none vs guard | secret | n/a | 0.00 | 1 | 1 |
+| none vs guard | promise | n/a | 0.00 | 1 | 1 |
 
 ## By goal
 | goal | none | prompt | guard |

@@ -266,3 +266,17 @@ def test_guard_keeps_benign_utility_in_mock(tmp_path):
     recs = run_utility("mock", ["guard"], runs=5, out_path=str(tmp_path / "utility.jsonl"), workers=2)
     benign = [r for r in recs if r["kind"] == "benign"]
     assert len(recs) == 20 and not any(r["breach"] for r in recs) and sum(r["success"] for r in benign) >= 10
+
+
+def test_exact_stratified_test_matches_fisher_and_combines_strata():
+    from scipy.stats import fisher_exact
+
+    from redteam.stats import exact_stratified_test
+    one = [((3, 0), (0, 3))]                      # 3/3 vs 0/3 on one goal, as in the pilot
+    assert exact_stratified_test(one) == pytest.approx(fisher_exact([[3, 0], [0, 3]])[1]) == pytest.approx(0.1)
+    assert exact_stratified_test(one * 2) == pytest.approx(0.005)     # two such goals: 2 * (1/20)^2
+    assert exact_stratified_test([((10, 0), (0, 10))]) < 1e-4          # ten runs settle it
+    assert exact_stratified_test([((1, 2), (1, 2))]) == pytest.approx(1.0)
+    assert exact_stratified_test([((0, 3), (0, 3))]) == pytest.approx(1.0)  # uninformative stratum
+    table = [[7, 3], [2, 8]]
+    assert exact_stratified_test([((7, 3), (2, 8))]) == pytest.approx(fisher_exact(table)[1], abs=1e-9)

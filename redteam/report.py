@@ -42,7 +42,7 @@ def comparisons(results: list, defences) -> list:
         rows.append(("all", cmh_test(results, "none", d)))
         for c in CATEGORIES:
             rows.append((c, cmh_test(results, "none", d, subset=lambda r, c=c: r["category"] == c)))
-    adj = holm([r[1]["p"] for r in rows])
+    adj = holm([r[1]["p_exact"] for r in rows])
     return [(scope, res, p) for (scope, res), p in zip(rows, adj)]  # noqa: B905 (Python 3.9 support)
 
 
@@ -113,12 +113,12 @@ def build_report(results_path: str, out_dir: str, meta: dict) -> str:
     chart = os.path.join(out_dir, "success_by_category.png")
     plot(by_cat, defences, chart)
 
-    comp_lines = ["| comparison | scope | MH odds ratio | χ² | p (Holm) |", "|---|---|---|---|---|"]
+    comp_lines = ["| comparison | scope | MH odds ratio | MH χ² | exact p | exact p (Holm) |", "|---|---|---|---|---|---|"]
     for scope, res, p_adj in comparisons(results, defences):
         orr = res['mh_odds_ratio']
         orr = "n/a" if orr != orr else ("∞" if orr == float("inf") else f"{orr:.2f}")
         comp_lines.append(f"| none vs {res['b']} | {scope} | {orr} | "
-                          f"{res['chi2']:.2f} | {p_adj:.3g} |")
+                          f"{res['chi2']:.2f} | {res['p_exact']:.3g} | {p_adj:.3g} |")
 
     mock_warning = ("\n> **Note:** these results come from the offline mock models. They only show that "
                     "the pipeline works and are not real findings.\n" if meta.get("provider") == "mock" else "")
@@ -146,9 +146,10 @@ Each cell is the attack success rate with a 95% Clopper-Pearson interval and the
 {table(by_strat, [s for s in STRATEGIES if any((d, s) in by_strat for d in defences)], defences, 'strategy')}
 
 ## Does a defence really help?
-Cochran-Mantel-Haenszel test, stratified by goal, comparing each defence with no defence.
-An odds ratio above 1 means attacks succeed more often without the defence. p-values are
-Holm-corrected across every row of this table.
+Each defence is compared with no defence within each goal, and the evidence is combined
+across goals (Cochran-Mantel-Haenszel). An odds ratio above 1 means attacks succeed more often
+without the defence. The p-value is the exact conditional test, which stays valid with few
+runs, and is Holm-corrected across every row of this table.
 
 {chr(10).join(comp_lines)}
 
