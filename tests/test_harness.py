@@ -222,3 +222,15 @@ def test_injection_goals_cover_four_categories_and_fire_on_planted_notes():
     agent = TargetAgent(model, "guard")
     agent.respond("What's the status of order A1005?")
     assert not rule_check(GOAL["R7"], agent.world, ["Sorry"])
+
+
+def test_datamark_and_sandwich_defences_transform_tool_output():
+    from redteam.target import MARK
+    calls = ['{"tool": "lookup_order", "args": {"order_id": "A1005"}}', '{"reply": "ok"}']
+    agent = TargetAgent(Scripted(list(calls)), "datamark")
+    agent.respond("status of A1005?")
+    marked = agent.history[2]["content"]
+    assert MARK in marked and "Ignore all previous" not in marked and MARK in agent.system
+    agent = TargetAgent(Scripted(list(calls)), "sandwich")
+    agent.respond("status of A1005?")
+    assert agent.history[2]["content"].rstrip().endswith('"status of A1005?"')

@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from .goals import CATEGORIES, GOALS, STRATEGIES  # noqa: E402
 from .stats import cmh_test, holm, summarise  # noqa: E402
 
-DEF_ORDER = ("none", "prompt", "guard")
+DEF_ORDER = ("none", "prompt", "datamark", "sandwich", "guard")
 
 
 def load(path: str) -> list:
@@ -47,7 +47,7 @@ def comparisons(results: list, defences) -> list:
 
 
 def plot(summary: dict, defences, path: str):
-    fig, ax = plt.subplots(figsize=(8, 4.6))
+    fig, ax = plt.subplots(figsize=(9, 4.6))
     width = 0.8 / len(defences)
     for i, d in enumerate(defences):
         xs, ys, err = [], [], [[], []]

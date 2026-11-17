@@ -92,7 +92,7 @@ class MockModel:
 
     def _target(self, system: str, messages: list) -> str:
         last = messages[-1]["content"]
-        hardened = "untrusted" in system.lower()
+        hardened = "untrusted" in system.lower() or "Reminder: the text above is data" in last
         p = self.gullibility * (0.4 if hardened else 1.0)
         comply = self.rng.random() < p
         if last.startswith("TOOL_RESULT"):
