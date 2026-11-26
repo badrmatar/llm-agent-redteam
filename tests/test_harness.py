@@ -427,3 +427,30 @@ def test_census_scoreboard_summarises_mixed_results():
     board = scoreboard(results)
     assert "3 servers scanned" in board and "vulnerable: 1" in board
     assert "path-traversal" in board and "read_file" in board
+
+
+# ---- harvester (build a long targets list from npm) ----------------------------------
+def test_harvest_filters_to_file_servers_and_formats_lines():
+    from redteam.harvest import build_targets, looks_file_server
+    assert looks_file_server("@foo/mcp-filesystem-server") and not looks_file_server("mcp-weather")
+    names = ["@foo/mcp-filesystem-server", "mcp-weather", "cool-fs-mcp",
+             "@modelcontextprotocol/server-filesystem"]
+    lines = build_targets(names)
+    assert lines[0].startswith("official-filesystem |")                  # control always first
+    assert any("foo-mcp-filesystem-server | npx -y @foo/mcp-filesystem-server" == x for x in lines)
+    assert not any("mcp-weather" in x for x in lines)                    # non-file server dropped
+    assert sum("server-filesystem" in x for x in lines) == 1            # official not duplicated
+
+
+def test_harvest_search_parses_registry_json():
+    import io
+
+    from redteam.harvest import search_npm
+    payload = io.BytesIO(json.dumps({"objects": [
+        {"package": {"name": "mcp-fs-one"}}, {"package": {"name": "mcp-fs-two"}}, {"package": {}}]}).encode())
+
+    class Ctx:
+        def __enter__(self): return payload
+        def __exit__(self, *a): return False
+
+    assert search_npm("q", opener=lambda url, timeout=0: Ctx()) == ["mcp-fs-one", "mcp-fs-two"]
