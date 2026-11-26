@@ -7,3 +7,8 @@ results/mock/
 *.egg-info/
 build/
 dist/
+
+# runtime outputs (keep only the committed pilot)
+results/openai/
+results/keytest/
+results/mcp/
