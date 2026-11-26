@@ -115,7 +115,7 @@ def mcp_judge(scenario: MCPScenario, log: list, replies: list) -> tuple:
 
 
 def run_mcp_episode(scenario: MCPScenario, mcp_command, attacker_model, target_model,
-                    turns: int = 4) -> dict:
+                    turns: int = 4, opening: str | None = None) -> dict:
     """One attacker-vs-MCP-agent conversation against a freshly spawned local server."""
     from .attacker import Attacker
     from .goals import Goal
@@ -124,7 +124,7 @@ def run_mcp_episode(scenario: MCPScenario, mcp_command, attacker_model, target_m
                 objective=scenario.attacker_objective)
     with MCPServer(mcp_command) as server:
         target = MCPTarget(model=target_model, server=server, scenario=scenario)
-        attacker = Attacker(attacker_model, goal)
+        attacker = Attacker(attacker_model, goal, opening=opening)
         replies, transcript, reply = [], [], None
         success, reason, used = False, "no breach", 0
         for t in range(turns):

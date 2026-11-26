@@ -15,9 +15,10 @@ from .utility import TASKS, run_task
 from .world import World
 
 
-def run_episode(goal, defence: str, attacker_model, target_model, judge_model, turns: int) -> dict:
+def run_episode(goal, defence: str, attacker_model, target_model, judge_model, turns: int,
+                opening: str | None = None) -> dict:
     target = TargetAgent(target_model, defence)
-    attacker = Attacker(attacker_model, goal)
+    attacker = Attacker(attacker_model, goal, opening=opening)
     replies, transcript, reply = [], [], None
     success, method, used = False, "none", 0
     for t in range(turns):

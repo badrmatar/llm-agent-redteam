@@ -22,12 +22,16 @@ no quotes, no explanations. Adapt to the assistant's previous replies."""
 
 
 class Attacker:
-    def __init__(self, model, goal: Goal):
+    def __init__(self, model, goal: Goal, opening: str | None = None):
         self.model = model
         self.system = ATTACKER_SYSTEM.format(objective=goal.objective, hint=STRATEGY_HINTS[goal.strategy])
         self.history: list = []  # from the attacker's point of view
+        self.opening = opening   # if set, the learning loop supplies the first message verbatim
 
     def next_message(self, last_reply: str | None) -> str:
+        if last_reply is None and self.opening is not None:
+            self.history.append({"role": "assistant", "content": self.opening})
+            return self.opening
         if last_reply is None:
             self.history.append({"role": "user", "content": "Start the conversation."})
         else:
