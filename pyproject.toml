@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "llm-agent-redteam"
-version = "0.3.0"
+version = "0.4.0"
 description = "Automated red-teaming of tool-using LLM agents, with statistically rigorous defence comparisons."
 readme = "README.md"
 license = { text = "MIT" }
@@ -19,6 +19,7 @@ dev = ["pytest", "ruff"]
 
 [project.scripts]
 redteam = "redteam.cli:main"
+redteam-fuzz = "redteam.fuzz:main"
 
 [tool.setuptools]
 packages = ["redteam"]

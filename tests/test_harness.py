@@ -345,3 +345,54 @@ def test_mcp_episode_obeying_injection_is_caught_and_resisting_is_safe():
     assert res["success"] and "delete_message" in res["reason"]
     safe = Scripted(['{"tool": "list_inbox", "args": {}}', '{"reply": "Nothing needs action."}'] * 3)
     assert not run_mcp_episode(SCENARIOS["mcp-delete"], MCP_CMD, Scripted(["check inbox"] * 4), safe, turns=2)["success"]
+
+
+# ---- argument fuzzer (reflection-proof canary) ---------------------------------------
+def test_fuzz_traversal_is_reflection_proof():
+    from redteam.fuzz import fuzz_read_tool, traversal_payloads
+    token = "CANARY_deadbeef"
+    payloads = traversal_payloads("/ws/allowed", "/ws/secret/canary.txt")
+    def vuln(n, a):  # actually reads the escaped file -> returns the token
+        return (token + " file contents") if ".." in a["path"] or a["path"].startswith("/") else "ok"
+    assert fuzz_read_tool(vuln, "read_file", "path", {}, token, payloads)
+
+    def reflect(n, a):  # only ECHOES the path back in an error -> must NOT be flagged
+        return f"Error: cannot open {a['path']}"
+    assert not fuzz_read_tool(reflect, "read_file", "path", {}, token, payloads)
+
+    def secure(n, a):  # refuses -> no finding
+        return "access denied: outside allowed directory"
+    assert not fuzz_read_tool(secure, "read_file", "path", {}, token, payloads)
+
+
+def test_fuzz_command_injection_needs_a_real_side_effect():
+    from redteam.fuzz import cmdi_payloads, fuzz_cmd_tool
+    state = {"marker": False}
+
+    def call(name, args):
+        if "touch" in next(iter(args.values())):
+            state["marker"] = True       # the payload reached a shell and created the file
+
+    findings = fuzz_cmd_tool(call, "run", "cmd", {}, "/tmp/m", cmdi_payloads("ls", "/tmp/m"),
+                             exists=lambda p: state["marker"])
+    assert findings and findings[0].vuln_class == "command-injection"
+    # a server that ignores metacharacters creates no marker -> no false positive
+    assert not fuzz_cmd_tool(lambda n, a: None, "run", "cmd", {}, "/tmp/m",
+                             cmdi_payloads("ls", "/tmp/m"), exists=lambda p: False)
+
+
+def test_fuzz_classify_picks_the_right_arg():
+    from redteam.fuzz import classify
+    assert classify({"name": "read_file", "inputSchema": {"properties": {"path": {"type": "string"}}}}) \
+        == ("path-traversal", "path")
+    assert classify({"name": "run_command", "description": "run a shell command",
+                     "inputSchema": {"properties": {"cmd": {"type": "string"}}}}) \
+        == ("command-injection", "cmd")
+    assert classify({"name": "list_inbox", "inputSchema": {"properties": {}}}) == (None, None)
+
+
+def test_fuzz_run_refuses_remote_targets():
+    from redteam.fuzz import run_fuzz
+    from redteam.mcp_client import MCPError
+    with pytest.raises(MCPError):
+        run_fuzz("python server.py http://evil.io")
