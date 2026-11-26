@@ -396,3 +396,34 @@ def test_fuzz_run_refuses_remote_targets():
     from redteam.mcp_client import MCPError
     with pytest.raises(MCPError):
         run_fuzz("python server.py http://evil.io")
+
+
+# ---- census (batch runner) -----------------------------------------------------------
+def test_census_load_targets(tmp_path):
+    from redteam.census import load_targets
+    f = tmp_path / "t.txt"
+    f.write_text("# a comment\n\nalpha | npx -y thing\n   beta|python s.py {allowed}\nbadline\n")
+    assert load_targets(str(f)) == [("alpha", "npx -y thing"), ("beta", "python s.py {allowed}")]
+
+
+def test_census_records_errors_without_crashing(tmp_path):
+    from redteam.census import run_census, scoreboard
+    targets = [("nonexistent", "this-binary-does-not-exist-xyz"),
+               ("remote-blocked", "python s.py http://evil.io")]
+    results = run_census(targets, str(tmp_path / "out"), read_timeout=5, progress=False)
+    assert len(results) == 2 and all(r["status"] == "error" for r in results)
+    assert "errored" in scoreboard(results)
+    assert (tmp_path / "out" / "census.jsonl").exists()
+
+
+def test_census_scoreboard_summarises_mixed_results():
+    from redteam.census import scoreboard
+    results = [
+        {"name": "a", "status": "secure", "findings": [], "tools": []},
+        {"name": "b", "status": "VULNERABLE", "tools": [],
+         "findings": [{"vuln_class": "path-traversal", "tool": "read_file", "payload": "../x"}]},
+        {"name": "c", "status": "error", "findings": [], "tools": [], "error": "boom"},
+    ]
+    board = scoreboard(results)
+    assert "3 servers scanned" in board and "vulnerable: 1" in board
+    assert "path-traversal" in board and "read_file" in board

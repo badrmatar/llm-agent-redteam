@@ -145,6 +145,31 @@ its reply. Scenarios live in `redteam/mcp_target.py`.
 stdio. The client refuses a command that looks like a URL or remote host, so the harness cannot be
 pointed at a live service. Only run it against servers you control.
 
+## Finding real bugs: the fuzzer and the census *(new)*
+
+Two more modes hunt *implementation* bugs in a server's own tool handlers, rather than fooling a
+model. Detection is canary-based and reflection-proof (see `redteam/fuzz.py`): a path-traversal
+hit requires a secret token that is only on disk and never sent, and a command-injection hit
+requires a marker file that only a real shell could create -- so an echoed argument can't fake
+either.
+
+```bash
+# fuzz one local server for path-traversal / command-injection
+redteam-fuzz --mcp-cmd "npx -y @modelcontextprotocol/server-filesystem"
+
+# fuzz a whole list and print one scoreboard (a "census" of the ecosystem)
+redteam-census --targets targets.example.txt
+```
+
+The census (`redteam/census.py`) reads a `name | command` targets file, fuzzes each server,
+records secure / vulnerable / errored, and prints a scoreboard. The headline result of this
+project is that census -- "scanned N servers, these have holes" -- not any single bug.
+
+**Safety, and it matters more here:** every target is still launched locally and only locally,
+but a long list means running a lot of other people's code. Run the census **inside a throwaway
+VM or container you are happy to destroy, never your main machine.** Test only servers you are
+authorised to test, and disclose anything you find to the maintainer privately.
+
 ## Results (pilot)
 
 A first pilot with **gpt-4o-mini** as attacker, target and judge, run on v0.1 of the harness

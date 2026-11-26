@@ -125,7 +125,7 @@ def classify(tool: dict) -> tuple:
 
 
 # ---- orchestration against a real local server ---------------------------------------
-def run_fuzz(mcp_cmd, workdir: str | None = None, keep: bool = False) -> dict:
+def run_fuzz(mcp_cmd, workdir: str | None = None, keep: bool = False, read_timeout: float = 60.0) -> dict:
     """Spawn a local server, plant canaries, fuzz its tools, return findings."""
     ws = workdir or tempfile.mkdtemp(prefix="redteam_fuzz_")
     allowed = os.path.join(ws, "allowed")
@@ -144,7 +144,7 @@ def run_fuzz(mcp_cmd, workdir: str | None = None, keep: bool = False) -> dict:
     ensure_local(cmd)                                       # refuse remote targets before launching
     findings, tools_seen = [], []
     try:
-        with MCPServer(cmd, timeout=60) as srv:
+        with MCPServer(cmd, timeout=read_timeout) as srv:
             for tool in srv.tools:
                 tools_seen.append(tool["name"])
                 vclass, arg = classify(tool)

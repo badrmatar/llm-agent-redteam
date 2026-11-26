@@ -1,0 +1,15 @@
+# Targets for the batch scanner (redteam-census).
+# One server per line:   name | local server command
+#   - lines starting with # are ignored
+#   - the server's allowed directory is appended automatically (or put {allowed} in the command)
+#   - LOCAL commands only; run the whole census inside a throwaway VM / container, not your Mac
+#
+# The official server below is a known-good control: it should come back "secure", which
+# proves the scanner isn't false-positiving. Add community servers you are authorised to test
+# below it, review each package before running, and disclose anything you find responsibly.
+
+official-filesystem | npx -y @modelcontextprotocol/server-filesystem
+
+# Examples to try (uncomment after reviewing the package; results unknown until you run them):
+# redf0x1-filesystem   | npx -y @redf0x1/mcp-server-filesystem
+# npx-fetch            | npx -y @tokenizin/mcp-npx-fetch

@@ -12,6 +12,7 @@ service by accident.
 from __future__ import annotations
 
 import json
+import select
 import shlex
 import subprocess
 import threading
@@ -135,6 +136,9 @@ class MCPServer:
     def _read(self) -> dict:
         if self.proc is None or self.proc.stdout is None:
             raise MCPError("server not started")
+        ready, _, _ = select.select([self.proc.stdout], [], [], self.timeout)
+        if not ready:
+            raise MCPError(f"no response from MCP server within {self.timeout:.0f}s")
         line = self.proc.stdout.readline()
         if line == "":
             raise MCPError("MCP server closed the connection unexpectedly")
